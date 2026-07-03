@@ -71,9 +71,9 @@ export default function PredictionControls({
 }) {
   return (
     <div className="flex flex-wrap md:flex-nowrap items-center gap-3 w-full">
-      {/* Timeframe pills + Candles/Line toggle — two separate boxes, same row */}
-      <div className="flex items-center gap-2 order-1">
-        {/* Box 1: Timeframe pills */}
+      {/* Timeframe pills + Candles/Line toggle — full width row, boxes at each end */}
+      <div className="flex items-center justify-between w-full order-1">
+        {/* Box 1: Timeframe pills — left side */}
         <div
           className="flex items-center gap-0.5 p-1 rounded-lg"
           style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}
@@ -94,7 +94,7 @@ export default function PredictionControls({
           ))}
         </div>
 
-        {/* Box 2: Candles / Line toggle — separate box, same line */}
+        {/* Box 2: Candles / Line toggle — right side, aligned with Statistical end */}
         <div
           className="flex items-center gap-0.5 p-1 rounded-lg"
           style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}
@@ -124,7 +124,7 @@ export default function PredictionControls({
         </div>
       </div>
 
-      {/* Divider 1 */}
+      {/* Divider 1 — desktop only */}
       <div className="hidden md:block w-px h-5 order-2" style={{ background: 'rgba(255,255,255,0.08)' }} />
 
       {/* Model pills */}
