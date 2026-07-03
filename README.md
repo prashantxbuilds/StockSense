@@ -9,6 +9,10 @@
 </p>
 
 <p align="center">
+  <a href="https://stock-sense-ruddy.vercel.app/" target="_blank"><strong>🌐 Live Demo: stock-sense-ruddy.vercel.app</strong></a>
+</p>
+
+<p align="center">
   <img src="https://img.shields.io/badge/Next.js-14-000000?style=for-the-badge&logo=nextdotjs&logoColor=white" alt="Next.js" />
   <img src="https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React" />
   <img src="https://img.shields.io/badge/Tailwind_CSS-3.4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white" alt="Tailwind CSS" />
