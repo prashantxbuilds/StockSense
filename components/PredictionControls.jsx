@@ -71,7 +71,7 @@ export default function PredictionControls({
 }) {
   return (
     <div className="flex flex-wrap md:flex-nowrap items-center gap-3 w-full">
-      {/* Timeframe pills */}
+      {/* Timeframe pills + Chart Style Toggle on the same row */}
       <div
         className="flex items-center gap-0.5 p-1 rounded-lg order-1"
         style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}
@@ -90,6 +90,33 @@ export default function PredictionControls({
             {tf.label}
           </button>
         ))}
+
+        {/* Thin separator */}
+        <div className="w-px h-4 mx-1" style={{ background: 'rgba(255,255,255,0.12)' }} />
+
+        {/* Chart Style Toggle (Candles / Line) — inline with timeframes */}
+        <button
+          onClick={() => onChartTypeChange('candles')}
+          className="px-2.5 sm:px-3 py-1 rounded-md text-xs font-semibold transition-all duration-150"
+          style={{
+            background: chartType === 'candles' ? 'rgba(124,111,238,0.25)' : 'transparent',
+            color: chartType === 'candles' ? '#a78bfa' : 'rgba(255,255,255,0.4)',
+            border: chartType === 'candles' ? '1px solid rgba(124,111,238,0.4)' : '1px solid transparent',
+          }}
+        >
+          Candles
+        </button>
+        <button
+          onClick={() => onChartTypeChange('line')}
+          className="px-2.5 sm:px-3 py-1 rounded-md text-xs font-semibold transition-all duration-150"
+          style={{
+            background: chartType === 'line' ? 'rgba(124,111,238,0.25)' : 'transparent',
+            color: chartType === 'line' ? '#a78bfa' : 'rgba(255,255,255,0.4)',
+            border: chartType === 'line' ? '1px solid rgba(124,111,238,0.4)' : '1px solid transparent',
+          }}
+        >
+          Line
+        </button>
       </div>
 
       {/* Divider 1 */}
@@ -125,37 +152,6 @@ export default function PredictionControls({
         })}
       </div>
 
-      {/* Divider 2 */}
-      <div className="hidden md:block w-px h-5 order-2 md:order-3 md:ml-auto" style={{ background: 'rgba(255,255,255,0.08)' }} />
-
-      {/* Chart Style Toggle (Candles / Line) */}
-      <div
-        className="flex items-center gap-0.5 p-1 rounded-lg order-2 md:order-4 ml-auto md:ml-0"
-        style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}
-      >
-        <button
-          onClick={() => onChartTypeChange('candles')}
-          className="px-3 py-1 rounded-md text-xs font-semibold transition-all duration-150"
-          style={{
-            background: chartType === 'candles' ? 'rgba(124,111,238,0.25)' : 'transparent',
-            color: chartType === 'candles' ? '#a78bfa' : 'rgba(255,255,255,0.4)',
-            border: chartType === 'candles' ? '1px solid rgba(124,111,238,0.4)' : '1px solid transparent',
-          }}
-        >
-          Candles
-        </button>
-        <button
-          onClick={() => onChartTypeChange('line')}
-          className="px-3 py-1 rounded-md text-xs font-semibold transition-all duration-150"
-          style={{
-            background: chartType === 'line' ? 'rgba(124,111,238,0.25)' : 'transparent',
-            color: chartType === 'line' ? '#a78bfa' : 'rgba(255,255,255,0.4)',
-            border: chartType === 'line' ? '1px solid rgba(124,111,238,0.4)' : '1px solid transparent',
-          }}
-        >
-          Line
-        </button>
-      </div>
     </div>
   )
 }
