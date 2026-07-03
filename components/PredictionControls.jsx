@@ -71,52 +71,57 @@ export default function PredictionControls({
 }) {
   return (
     <div className="flex flex-wrap md:flex-nowrap items-center gap-3 w-full">
-      {/* Timeframe pills + Chart Style Toggle on the same row */}
-      <div
-        className="flex items-center gap-0.5 p-1 rounded-lg order-1"
-        style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}
-      >
-        {TIMEFRAMES.map(tf => (
+      {/* Timeframe pills + Candles/Line toggle — two separate boxes, same row */}
+      <div className="flex items-center gap-2 order-1">
+        {/* Box 1: Timeframe pills */}
+        <div
+          className="flex items-center gap-0.5 p-1 rounded-lg"
+          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}
+        >
+          {TIMEFRAMES.map(tf => (
+            <button
+              key={tf.key}
+              onClick={() => onTimeframeChange(tf.key)}
+              className="px-2.5 sm:px-3 py-1 rounded-md text-xs font-medium transition-all duration-150"
+              style={{
+                background: timeframe === tf.key ? 'rgba(124,111,238,0.25)' : 'transparent',
+                color: timeframe === tf.key ? '#a78bfa' : 'rgba(255,255,255,0.4)',
+                border: timeframe === tf.key ? '1px solid rgba(124,111,238,0.4)' : '1px solid transparent',
+              }}
+            >
+              {tf.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Box 2: Candles / Line toggle — separate box, same line */}
+        <div
+          className="flex items-center gap-0.5 p-1 rounded-lg"
+          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}
+        >
           <button
-            key={tf.key}
-            onClick={() => onTimeframeChange(tf.key)}
-            className="px-2.5 sm:px-3 py-1 rounded-md text-xs font-medium transition-all duration-150"
+            onClick={() => onChartTypeChange('candles')}
+            className="px-2.5 sm:px-3 py-1 rounded-md text-xs font-semibold transition-all duration-150"
             style={{
-              background: timeframe === tf.key ? 'rgba(124,111,238,0.25)' : 'transparent',
-              color: timeframe === tf.key ? '#a78bfa' : 'rgba(255,255,255,0.4)',
-              border: timeframe === tf.key ? '1px solid rgba(124,111,238,0.4)' : '1px solid transparent',
+              background: chartType === 'candles' ? 'rgba(124,111,238,0.25)' : 'transparent',
+              color: chartType === 'candles' ? '#a78bfa' : 'rgba(255,255,255,0.4)',
+              border: chartType === 'candles' ? '1px solid rgba(124,111,238,0.4)' : '1px solid transparent',
             }}
           >
-            {tf.label}
+            Candles
           </button>
-        ))}
-
-        {/* Thin separator */}
-        <div className="w-px h-4 mx-1" style={{ background: 'rgba(255,255,255,0.12)' }} />
-
-        {/* Chart Style Toggle (Candles / Line) — inline with timeframes */}
-        <button
-          onClick={() => onChartTypeChange('candles')}
-          className="px-2.5 sm:px-3 py-1 rounded-md text-xs font-semibold transition-all duration-150"
-          style={{
-            background: chartType === 'candles' ? 'rgba(124,111,238,0.25)' : 'transparent',
-            color: chartType === 'candles' ? '#a78bfa' : 'rgba(255,255,255,0.4)',
-            border: chartType === 'candles' ? '1px solid rgba(124,111,238,0.4)' : '1px solid transparent',
-          }}
-        >
-          Candles
-        </button>
-        <button
-          onClick={() => onChartTypeChange('line')}
-          className="px-2.5 sm:px-3 py-1 rounded-md text-xs font-semibold transition-all duration-150"
-          style={{
-            background: chartType === 'line' ? 'rgba(124,111,238,0.25)' : 'transparent',
-            color: chartType === 'line' ? '#a78bfa' : 'rgba(255,255,255,0.4)',
-            border: chartType === 'line' ? '1px solid rgba(124,111,238,0.4)' : '1px solid transparent',
-          }}
-        >
-          Line
-        </button>
+          <button
+            onClick={() => onChartTypeChange('line')}
+            className="px-2.5 sm:px-3 py-1 rounded-md text-xs font-semibold transition-all duration-150"
+            style={{
+              background: chartType === 'line' ? 'rgba(124,111,238,0.25)' : 'transparent',
+              color: chartType === 'line' ? '#a78bfa' : 'rgba(255,255,255,0.4)',
+              border: chartType === 'line' ? '1px solid rgba(124,111,238,0.4)' : '1px solid transparent',
+            }}
+          >
+            Line
+          </button>
+        </div>
       </div>
 
       {/* Divider 1 */}
