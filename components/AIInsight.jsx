@@ -4,7 +4,7 @@ import { formatCurrency, getCurrencyForSymbol } from '@/lib/utils'
 const MODEL_COLOR = { prophet: '#7c6fee', lstm: '#4ade80', arima: '#fb923c' }
 const MODEL_LABEL = { prophet: 'Trend',    lstm: 'Momentum', arima: 'Statistical' }
 
-export default function AIInsight({ prediction, activeModel, symbol, quote }) {
+export default function AIInsight({ prediction, activeModel, symbol, quote, error }) {
   const color    = MODEL_COLOR[activeModel] || '#7c6fee'
   const method   = MODEL_LABEL[activeModel] || 'Trend'
   const predicted = prediction?.predicted || []
@@ -100,6 +100,17 @@ export default function AIInsight({ prediction, activeModel, symbol, quote }) {
               </div>
             </div>
           </>
+        ) : error ? (
+          <div className="flex flex-col items-center gap-2 py-4">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="1.5">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <p className="text-[11px] text-center text-[#f87171] px-4">
+              {error}
+            </p>
+          </div>
         ) : (
           <div className="flex flex-col items-center gap-2 py-4">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="1.5">

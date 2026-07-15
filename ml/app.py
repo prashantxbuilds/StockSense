@@ -277,7 +277,7 @@ def predict():
         symbol     = body.get('symbol', 'UNKNOWN')
         days       = int(body.get('days', 7))
         model_name = body.get('model', 'prophet').lower()
-        prices     = [float(p) for p in body.get('prices', [])]
+        prices     = [max(0.01, float(p)) for p in body.get('prices', [])]
         dates      = body.get('dates', [])
 
         if len(prices) < 5:

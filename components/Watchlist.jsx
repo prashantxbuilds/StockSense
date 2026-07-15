@@ -64,7 +64,19 @@ function LogoAvatar({ symbol, logoUrl, size = 32 }) {
   )
 }
 
-export default function Watchlist({ activeSymbol, onSelect, quotes, logos = {}, horizontal = false }) {
+export default function Watchlist({
+  activeSymbol,
+  onSelect,
+  quotes,
+  logos = {},
+  symbols = [],
+  names = {},
+  horizontal = false
+}) {
+  const watchlistItems = symbols.length > 0
+    ? symbols.map(s => ({ symbol: s, name: names[s] || '' }))
+    : DEFAULT_WATCHLIST
+
   return (
     <div
       className="rounded-xl overflow-hidden"
@@ -85,7 +97,7 @@ export default function Watchlist({ activeSymbol, onSelect, quotes, logos = {}, 
           className="text-[10px] px-1.5 py-0.5 rounded"
           style={{ background: 'rgba(124,111,238,0.15)', color: '#7c6fee' }}
         >
-          {DEFAULT_WATCHLIST.length}
+          {watchlistItems.length}
         </span>
       </div>
 
@@ -94,7 +106,7 @@ export default function Watchlist({ activeSymbol, onSelect, quotes, logos = {}, 
         // HORIZONTAL MODE (mobile — inside a row)
         <div className="scroll-x-mobile px-2 py-2">
           <div className="flex gap-2" style={{ minWidth: 'max-content' }}>
-            {DEFAULT_WATCHLIST.map((item) => {
+            {watchlistItems.map((item) => {
               const q        = quotes?.[item.symbol]
               const price    = q?.c
               const change   = q?.dp
@@ -138,7 +150,7 @@ export default function Watchlist({ activeSymbol, onSelect, quotes, logos = {}, 
       ) : (
         // VERTICAL MODE (desktop sidebar)
         <div className="divide-y" style={{ borderColor: 'rgba(255,255,255,0.04)' }}>
-          {DEFAULT_WATCHLIST.map((item) => {
+          {watchlistItems.map((item) => {
             const q        = quotes?.[item.symbol]
             const price    = q?.c
             const change   = q?.dp
@@ -171,7 +183,7 @@ export default function Watchlist({ activeSymbol, onSelect, quotes, logos = {}, 
                     {item.symbol}
                   </p>
                   <p className="text-[10px] truncate mt-0.5" style={{ color: 'rgba(255,255,255,0.28)' }}>
-                    {item.name}
+                    {item.name || item.symbol}
                   </p>
                 </div>
 

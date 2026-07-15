@@ -12,6 +12,7 @@ export default function Topbar({ symbol, onSymbolChange, activeModel }) {
   const [results, setResults] = useState([])
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [activeIndex, setActiveIndex] = useState(-1)
   const debounceRef = useRef(null)
   const inputRef = useRef(null)
 
@@ -30,6 +31,7 @@ export default function Topbar({ symbol, onSymbolChange, activeModel }) {
   const handleInput = (val) => {
     setQuery(val)
     setOpen(true)
+    setActiveIndex(-1)
     clearTimeout(debounceRef.current)
     if (!val.trim()) { setResults([]); setLoading(false); return }
     setLoading(true)
@@ -47,19 +49,44 @@ export default function Topbar({ symbol, onSymbolChange, activeModel }) {
     setQuery('')
     setResults([])
     setOpen(false)
+    setActiveIndex(-1)
     onSymbolChange(sym.trim().toUpperCase())
-  }
-
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && query.trim()) {
-      handleSelect(query.trim())
-    }
-    if (e.key === 'Escape') { setOpen(false); setResults([]) }
   }
 
   const trimmed = query.trim().toUpperCase()
   // Show dropdown if: loading, has results, OR user has typed something (to show direct-load option)
   const showDropdown = open && trimmed.length > 0
+  const totalItems = results.length + 1 // +1 for "Load directly" button
+
+  const handleKeyDown = (e) => {
+    if (!showDropdown) {
+      if (e.key === 'Enter' && query.trim()) {
+        handleSelect(query.trim())
+      }
+      return
+    }
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setActiveIndex(prev => (prev + 1) % totalItems)
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setActiveIndex(prev => (prev - 1 + totalItems) % totalItems)
+    } else if (e.key === 'Enter') {
+      e.preventDefault()
+      if (activeIndex === 0) {
+        handleSelect(trimmed)
+      } else if (activeIndex > 0 && results[activeIndex - 1]) {
+        handleSelect(results[activeIndex - 1].symbol)
+      } else {
+        handleSelect(trimmed)
+      }
+    } else if (e.key === 'Escape') {
+      setOpen(false)
+      setResults([])
+      setActiveIndex(-1)
+    }
+  }
 
   return (
     <header
@@ -141,9 +168,12 @@ export default function Topbar({ symbol, onSymbolChange, activeModel }) {
               <button
                 onMouseDown={() => handleSelect(trimmed)}
                 className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors"
-                style={{ borderBottom: (loading || results.length > 0) ? '1px solid rgba(255,255,255,0.06)' : 'none' }}
+                style={{
+                  borderBottom: (loading || results.length > 0) ? '1px solid rgba(255,255,255,0.06)' : 'none',
+                  background: activeIndex === 0 ? 'rgba(124,111,238,0.1)' : 'transparent',
+                }}
                 onMouseEnter={e => e.currentTarget.style.background = 'rgba(124,111,238,0.1)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                onMouseLeave={e => { if (activeIndex !== 0) e.currentTarget.style.background = 'transparent' }}
               >
                 <div
                   className="flex items-center justify-center shrink-0 rounded-lg"
@@ -186,25 +216,31 @@ export default function Topbar({ symbol, onSymbolChange, activeModel }) {
                 </div>
               )}
 
-              {results.map((r, i) => (
-                <button
-                  key={i}
-                  onMouseDown={() => handleSelect(r.symbol)}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors"
-                  style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(124,111,238,0.08)'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                >
-                  <span
-                    className="px-2 py-0.5 shrink-0 text-center text-xs font-bold rounded"
-                    style={{ background: 'rgba(124,111,238,0.15)', color: '#a78bfa', minWidth: '3.5rem' }}
+              {results.map((r, i) => {
+                const isActive = activeIndex === i + 1
+                return (
+                  <button
+                    key={i}
+                    onMouseDown={() => handleSelect(r.symbol)}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors"
+                    style={{
+                      borderTop: '1px solid rgba(255,255,255,0.04)',
+                      background: isActive ? 'rgba(124,111,238,0.08)' : 'transparent',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(124,111,238,0.08)'}
+                    onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent' }}
                   >
-                    {r.displaySymbol}
-                  </span>
-                  <span className="text-xs sm:text-sm truncate" style={{ color: '#e2e8f0' }}>{r.description}</span>
-                  <span className="ml-auto text-[10px] shrink-0" style={{ color: 'rgba(255,255,255,0.3)' }}>{r.type}</span>
-                </button>
-              ))}
+                    <span
+                      className="px-2 py-0.5 shrink-0 text-center text-xs font-bold rounded"
+                      style={{ background: 'rgba(124,111,238,0.15)', color: '#a78bfa', minWidth: '3.5rem' }}
+                    >
+                      {r.displaySymbol}
+                    </span>
+                    <span className="text-xs sm:text-sm truncate" style={{ color: '#e2e8f0' }}>{r.description}</span>
+                    <span className="ml-auto text-[10px] shrink-0" style={{ color: 'rgba(255,255,255,0.3)' }}>{r.type}</span>
+                  </button>
+                )
+              })}
             </div>
           )}
         </div>

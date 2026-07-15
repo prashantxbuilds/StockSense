@@ -16,7 +16,7 @@ import { formatCurrency, getCurrencyForSymbol, getLogoForStock } from '@/lib/uti
 const StockChart = dynamic(() => import('@/components/StockChart'), { ssr: false })
 
 const DEFAULT_SYMBOL = 'AAPL'
-const WATCHLIST_SYMBOLS = ['AAPL', 'TSLA', 'GOOGL', 'NVDA', 'MSFT', 'AMZN']
+const DEFAULT_WATCHLIST_SYMBOLS = ['AAPL', 'TSLA', 'GOOGL', 'NVDA', 'MSFT', 'AMZN']
 const MODEL_COLORS = { prophet: '#7c6fee', lstm: '#4ade80', arima: '#fb923c' }
 
 // ─── DOWNLOAD CSV HELPER ─────────────────────────────────────────────────────
@@ -55,7 +55,7 @@ function downloadCSV({ symbol, model, days, candles, prediction }) {
 }
 
 // ─── STOCK HEADER ─────────────────────────────────────────────────────────────
-function StockHeader({ symbol, profile, quote }) {
+function StockHeader({ symbol, profile, quote, loading, inWatchlist, onToggleWatchlist }) {
   const price = quote?.c
   const change = quote?.d
   const changePct = quote?.dp
@@ -71,7 +71,7 @@ function StockHeader({ symbol, profile, quote }) {
   }, [symbol])
 
   return (
-    <div className="flex items-center gap-3 animate-fade-in flex-wrap sm:flex-nowrap">
+    <div className="flex items-center gap-3 animate-fade-in flex-wrap sm:flex-nowrap w-full">
       {/* Logo — shimmer while loading, real logo when ready */}
       <div
         className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl shrink-0 overflow-hidden flex items-center justify-center"
@@ -99,11 +99,19 @@ function StockHeader({ symbol, profile, quote }) {
         )}
       </div>
 
-      {/* Name + exchange */}
+      {/* Name + exchange + watchlist star */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <h1 className="font-bold text-lg sm:text-xl tracking-tight" style={{ color: '#e2e8f0' }}>
+          <h1 className="font-bold text-lg sm:text-xl tracking-tight flex items-center gap-2" style={{ color: '#e2e8f0' }}>
             {symbol}
+            <button
+              onClick={onToggleWatchlist}
+              className="text-lg focus:outline-none transition-transform active:scale-90 hover:scale-110"
+              style={{ color: inWatchlist ? '#fb923c' : 'rgba(255,255,255,0.25)', cursor: 'pointer' }}
+              title={inWatchlist ? "Remove from Watchlist" : "Add to Watchlist"}
+            >
+              {inWatchlist ? '★' : '☆'}
+            </button>
           </h1>
           {profile?.name && (
             <span className="text-xs sm:text-sm truncate max-w-[140px] sm:max-w-none" style={{ color: 'rgba(255,255,255,0.45)' }}>
@@ -128,7 +136,12 @@ function StockHeader({ symbol, profile, quote }) {
 
       {/* Price */}
       <div className="text-right shrink-0 ml-auto">
-        {price ? (
+        {loading ? (
+          <div className="space-y-2 text-right">
+            <div className="skeleton w-24 sm:w-28 h-7 sm:h-8 ml-auto" />
+            <div className="skeleton w-16 sm:w-20 h-4 ml-auto" />
+          </div>
+        ) : price ? (
           <>
             <p className="text-2xl sm:text-3xl font-bold font-mono" style={{ color: '#e2e8f0' }}>
               {formatCurrency(price, currencyCode)}
@@ -155,10 +168,9 @@ function StockHeader({ symbol, profile, quote }) {
             </p>
           </>
         ) : (
-          <div className="space-y-2 text-right">
-            <div className="skeleton w-24 sm:w-28 h-7 sm:h-8 ml-auto" />
-            <div className="skeleton w-16 sm:w-20 h-4 ml-auto" />
-          </div>
+          <p className="text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.35)' }}>
+            Price Unavailable
+          </p>
         )}
       </div>
     </div>
@@ -264,6 +276,20 @@ export default function Home() {
   const [loadingStock, setLoadingStock] = useState(false)
   const [chartType, setChartType] = useState('candles')
   const [fetchError, setFetchError] = useState(null)
+  
+  const [watchlist, setWatchlist] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('watchlist_symbols')
+      if (saved) {
+        try {
+          return JSON.parse(saved)
+        } catch (_) {}
+      }
+    }
+    return DEFAULT_WATCHLIST_SYMBOLS
+  })
+  const [watchlistNames, setWatchlistNames] = useState({})
+  const [predictError, setPredictError] = useState(null)
 
   const predictDebounce = useRef(null)
 
@@ -360,6 +386,7 @@ export default function Home() {
   const fetchPrediction = useCallback(async (sym, model, numDays, candleData) => {
     if (!candleData?.c || candleData.c.length < 5) return
     setPredicting(true)
+    setPredictError(null)
     try {
       const prices = candleData.c
       const dates = candleData.t.map(t => {
@@ -376,8 +403,12 @@ export default function Home() {
       })
       const data = await res.json()
       if (!data.error) setPrediction(data)
-      else console.warn('Prediction error:', data.error)
+      else {
+        setPredictError(data.error)
+        console.warn('Prediction error:', data.error)
+      }
     } catch (e) {
+      setPredictError(e.message)
       console.warn('Prediction failed (ML service may be offline):', e.message)
     } finally {
       setPredicting(false)
@@ -412,26 +443,43 @@ export default function Home() {
 
   // ── Load watchlist quotes ──
   const loadWatchlistQuotes = useCallback(async () => {
+    if (!watchlist?.length) return
     const results = await Promise.allSettled(
-      WATCHLIST_SYMBOLS.map(s => fetch(`/api/quote/${s}`).then(r => r.json()).then(d => ({ s, d })))
+      watchlist.map(s => fetch(`/api/quote/${s}`).then(r => r.json()).then(d => ({ s, d })))
     )
     const q = {}
     results.forEach(r => { if (r.status === 'fulfilled') q[r.value.s] = r.value.d })
     setWatchlistQuotes(q)
-  }, [])
+  }, [watchlist])
 
-  // ── Load watchlist logos once on mount ──
-  const loadWatchlistLogos = useCallback(async () => {
+  // ── Load watchlist profile details (logos and names) ──
+  const loadWatchlistDetails = useCallback(async () => {
+    if (!watchlist?.length) return
     const results = await Promise.allSettled(
-      WATCHLIST_SYMBOLS.map(s => fetch(`/api/profile/${s}`).then(r => r.json()).then(d => ({ s, d })))
+      watchlist.map(s => fetch(`/api/profile/${s}`).then(r => r.json()).then(d => ({ s, d })))
     )
     const logos = {}
+    const names = {}
     results.forEach(r => {
-      if (r.status === 'fulfilled' && r.value.d?.logo) {
-        logos[r.value.s] = r.value.d.logo
+      if (r.status === 'fulfilled' && r.value.d) {
+        if (r.value.d.logo) logos[r.value.s] = r.value.d.logo
+        if (r.value.d.name) names[r.value.s] = r.value.d.name
       }
     })
-    setWatchlistLogos(logos)
+    setWatchlistLogos(prev => ({ ...prev, ...logos }))
+    setWatchlistNames(prev => ({ ...prev, ...names }))
+  }, [watchlist])
+
+  // ── Toggle stock in watchlist ──
+  const toggleWatchlist = useCallback((sym) => {
+    const upper = sym.trim().toUpperCase()
+    setWatchlist(prev => {
+      const next = prev.includes(upper) ? prev.filter(s => s !== upper) : [...prev, upper]
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('watchlist_symbols', JSON.stringify(next))
+      }
+      return next
+    })
   }, [])
 
   // ── On mount: load persisted stock + watchlist ──
@@ -446,10 +494,10 @@ export default function Home() {
     }
     fetchStockData(initialSymbol)
     loadWatchlistQuotes()
-    loadWatchlistLogos()
+    loadWatchlistDetails()
     const interval = setInterval(loadWatchlistQuotes, 30000)
     return () => clearInterval(interval)
-  }, [fetchStockData, loadWatchlistQuotes, loadWatchlistLogos])
+  }, [fetchStockData, loadWatchlistQuotes, loadWatchlistDetails])
 
   // ── When candles arrive, run prediction (debounced) ──
   useEffect(() => {
@@ -498,6 +546,8 @@ export default function Home() {
             onSelect={handleSymbolChange}
             quotes={watchlistQuotes}
             logos={watchlistLogos}
+            symbols={watchlist}
+            names={watchlistNames}
             horizontal
           />
         </div>
@@ -513,7 +563,14 @@ export default function Home() {
               className="p-3 sm:p-5 rounded-xl"
               style={{ background: '#0d1020', border: '1px solid rgba(255,255,255,0.06)' }}
             >
-              <StockHeader symbol={symbol} profile={profile} quote={quote} />
+              <StockHeader
+                symbol={symbol}
+                profile={profile}
+                quote={quote}
+                loading={loadingStock}
+                inWatchlist={watchlist.includes(symbol)}
+                onToggleWatchlist={() => toggleWatchlist(symbol)}
+              />
             </div>
 
             {/* Toolbar: timeframe + model */}
@@ -590,6 +647,7 @@ export default function Home() {
               activeModel={activeModel}
               days={days}
               symbol={symbol}
+              error={predictError}
             />
 
             {/* Stock stats */}
@@ -605,6 +663,7 @@ export default function Home() {
                 activeModel={activeModel}
                 symbol={symbol}
                 quote={quote}
+                error={predictError}
               />
               <NewsFeed symbol={symbol} />
             </div>
@@ -620,12 +679,15 @@ export default function Home() {
               onSelect={handleSymbolChange}
               quotes={watchlistQuotes}
               logos={watchlistLogos}
+              symbols={watchlist}
+              names={watchlistNames}
             />
             <AIInsight
               prediction={prediction}
               activeModel={activeModel}
               symbol={symbol}
               quote={quote}
+              error={predictError}
             />
             <NewsFeed symbol={symbol} />
           </div>

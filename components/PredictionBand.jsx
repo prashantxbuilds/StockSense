@@ -4,10 +4,26 @@ import { formatCurrency, getCurrencyForSymbol } from '@/lib/utils'
 const MODEL_COLOR = { prophet: '#7c6fee', lstm: '#4ade80', arima: '#fb923c' }
 const MODEL_LABEL = { prophet: 'Trend', lstm: 'Momentum', arima: 'Statistical' }
 
-export default function PredictionBand({ prediction, activeModel, days, symbol }) {
+export default function PredictionBand({ prediction, activeModel, days, symbol, error }) {
   const color = MODEL_COLOR[activeModel] || '#7c6fee'
   const label = MODEL_LABEL[activeModel] || 'Trend'
   const currencyCode = getCurrencyForSymbol(symbol)
+
+  if (error) {
+    return (
+      <div
+        className="flex items-center gap-4 px-5 py-4 rounded-xl"
+        style={{ background: 'rgba(248,113,113,0.05)', border: '1px solid rgba(248,113,113,0.2)' }}
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="1.5">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <p className="text-sm" style={{ color: '#f87171' }}>
+          {error}
+        </p>
+      </div>
+    )
+  }
 
   if (!prediction?.predicted?.length) {
     return (
