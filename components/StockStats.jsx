@@ -22,13 +22,15 @@ function fmtVol(n) {
   return String(n)
 }
 
-export default function StockStats({ quote, profile, financials }) {
+export default function StockStats({ quote, profile, financials, candles }) {
   const currencyCode = profile?.currency || quote?.currency || getCurrencyForSymbol(profile?.ticker || '')
   
   const metrics = financials?.metric || {}
   const w52High = metrics['52WeekHigh'] ? formatCurrency(metrics['52WeekHigh'], currencyCode) : '—'
   const w52Low = metrics['52WeekLow'] ? formatCurrency(metrics['52WeekLow'], currencyCode) : '—'
-  const volume = fmtVol(quote?.v || metrics.volume)
+  
+  const lastCandleVol = candles?.v?.length ? candles.v[candles.v.length - 1] : null
+  const volume = fmtVol(quote?.v || metrics.volume || lastCandleVol)
   const marketCap = profile?.marketCapitalization ? formatShortCurrency(profile.marketCapitalization, currencyCode) : '—'
   const pe = metrics.peBasicExclExtraTTM ? metrics.peBasicExclExtraTTM.toFixed(2) : '—'
   const beta = metrics.beta ? metrics.beta.toFixed(2) : '—'

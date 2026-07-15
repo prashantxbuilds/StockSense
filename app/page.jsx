@@ -734,7 +734,7 @@ export default function Home() {
             />
 
             {/* Stock stats */}
-            <StockStats quote={quote} profile={profile} financials={financials} />
+            <StockStats quote={quote} profile={profile} financials={financials} candles={candles} />
 
             {/* Indicators */}
             <Indicators candles={candles} />

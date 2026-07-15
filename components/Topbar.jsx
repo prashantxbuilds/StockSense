@@ -111,7 +111,7 @@ export default function Topbar({ symbol, onSymbolChange, activeModel }) {
         </div>
 
         {/* Search bar */}
-        <div className="flex-1 relative min-w-0">
+        <div className="flex-1 sm:relative min-w-0">
           <div
             className="flex items-center gap-2 px-2.5 sm:px-3 py-2 rounded-xl transition-all duration-200"
             style={{
@@ -161,7 +161,7 @@ export default function Topbar({ symbol, onSymbolChange, activeModel }) {
           {/* Dropdown */}
           {showDropdown && (
             <div
-              className="absolute top-full left-0 right-0 mt-1 rounded-xl overflow-hidden z-50 animate-fade-in"
+              className="absolute top-full left-3 right-3 sm:left-0 sm:right-0 mt-1 rounded-xl overflow-hidden z-50 animate-fade-in"
               style={{ background: '#0d1020', border: '1px solid rgba(124,111,238,0.2)', boxShadow: '0 20px 60px rgba(0,0,0,0.6)' }}
             >
               {/* ── Direct load row — ALWAYS shown when user has typed ── */}
