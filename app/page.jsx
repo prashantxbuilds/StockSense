@@ -177,10 +177,93 @@ function StockHeader({ symbol, profile, quote, loading, inWatchlist, onToggleWat
   )
 }
 
+// Custom stock-market SVG icons — no emojis
+const Icons = {
+  // Trend: ascending candlestick line
+  Trend: () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
+      <polyline points="16 7 22 7 22 13" />
+    </svg>
+  ),
+  // Momentum: wave oscillator pattern
+  Momentum: () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2 12 C4 6, 6 6, 8 12 C10 18, 12 18, 14 12 C16 6, 18 6, 20 12 C21 15, 22 15, 22 12" />
+    </svg>
+  ),
+  // Statistical: bar histogram
+  Statistical: () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="20" x2="18" y2="10" />
+      <line x1="12" y1="20" x2="12" y2="4" />
+      <line x1="6"  y1="20" x2="6"  y2="14" />
+      <line x1="2"  y1="20" x2="22" y2="20" />
+    </svg>
+  ),
+}
+
+const MODELS = [
+  {
+    id: 'prophet',
+    label: 'Trend',
+    desc: 'Seasonal patterns',
+    Icon: Icons.Trend,
+    color: '#7c6fee',
+    bg: 'rgba(124,111,238,0.15)',
+  },
+  {
+    id: 'lstm',
+    label: 'Momentum',
+    desc: 'Price movements',
+    Icon: Icons.Momentum,
+    color: '#4ade80',
+    bg: 'rgba(74,222,128,0.12)',
+  },
+  {
+    id: 'arima',
+    label: 'Statistical',
+    desc: 'Math-based estimate',
+    Icon: Icons.Statistical,
+    color: '#fb923c',
+    bg: 'rgba(251,146,60,0.12)',
+  },
+]
+
 // ─── PREDICT SLIDER ──────────────────────────────────────────────────────────
-function PredictRow({ days, onDaysChange, onDownload, predicting, onRunPredict }) {
+function PredictRow({ days, onDaysChange, onDownload, predicting, onRunPredict, activeModel, onModelChange }) {
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
+      {/* Model Selection pills */}
+      <div className="grid grid-cols-3 gap-2">
+        {MODELS.map(m => {
+          const active = activeModel === m.id
+          return (
+            <button
+              key={m.id}
+              onClick={() => onModelChange(m.id)}
+              className="flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-1.5 sm:gap-2 px-2 py-2.5 sm:px-3 sm:py-2 rounded-lg transition-all duration-150 w-full"
+              style={{
+                background: active ? m.bg : 'rgba(255,255,255,0.03)',
+                border: `1px solid ${active ? `${m.color}45` : 'rgba(255,255,255,0.07)'}`,
+                color: active ? m.color : 'rgba(255,255,255,0.4)',
+                transform: active ? 'scale(1.02)' : 'scale(1)',
+              }}
+              onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'rgba(255,255,255,0.06)' }}
+              onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'rgba(255,255,255,0.03)' }}
+            >
+              <m.Icon />
+              <div className="text-center sm:text-left">
+                <p className="text-[11px] sm:text-xs font-semibold leading-none">{m.label}</p>
+                <p className="hidden sm:block text-[9px] sm:text-[10px] mt-0.5 leading-none" style={{ color: active ? `${m.color}90` : 'rgba(255,255,255,0.25)' }}>
+                  {m.desc}
+                </p>
+              </div>
+            </button>
+          )
+        })}
+      </div>
+
       {/* Days slider */}
       <div className="flex items-center gap-3">
         <span className="text-xs shrink-0" style={{ color: 'rgba(255,255,255,0.4)' }}>Predict</span>
@@ -573,7 +656,7 @@ export default function Home() {
               />
             </div>
 
-            {/* Toolbar: timeframe + model */}
+            {/* Toolbar: timeframe + chart type */}
             <div
               className="p-3 rounded-xl"
               style={{ background: '#0d1020', border: '1px solid rgba(255,255,255,0.06)' }}
@@ -581,8 +664,6 @@ export default function Home() {
               <PredictionControls
                 timeframe={timeframe}
                 onTimeframeChange={setTimeframe}
-                activeModel={activeModel}
-                onModelChange={handleModelChange}
                 chartType={chartType}
                 onChartTypeChange={setChartType}
               />
@@ -638,6 +719,8 @@ export default function Home() {
                 predicting={predicting}
                 onRunPredict={() => fetchPrediction(symbol, activeModel, days, candles)}
                 onDownload={() => downloadCSV({ symbol, model: activeModel, days, candles, prediction })}
+                activeModel={activeModel}
+                onModelChange={handleModelChange}
               />
             </div>
 
