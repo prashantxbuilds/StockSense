@@ -4,7 +4,7 @@ import { formatCurrency, getCurrencyForSymbol } from '@/lib/utils'
 const MODEL_COLOR = { prophet: '#7c6fee', lstm: '#4ade80', arima: '#fb923c' }
 const MODEL_LABEL = { prophet: 'Trend',    lstm: 'Momentum', arima: 'Statistical' }
 
-export default function AIInsight({ prediction, activeModel, symbol, quote, error }) {
+export default function AIInsight({ prediction, activeModel, symbol, quote, error, warmingUp }) {
   const color    = MODEL_COLOR[activeModel] || '#7c6fee'
   const method   = MODEL_LABEL[activeModel] || 'Trend'
   const predicted = prediction?.predicted || []
@@ -100,6 +100,20 @@ export default function AIInsight({ prediction, activeModel, symbol, quote, erro
               </div>
             </div>
           </>
+        ) : warmingUp ? (
+          <div className="flex flex-col items-center gap-2 py-4">
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center"
+              style={{ background: 'rgba(124,111,238,0.15)', animation: 'pulse 1.5s ease-in-out infinite' }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round">
+                <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/>
+              </svg>
+            </div>
+            <p className="text-[11px] text-center" style={{ color: 'rgba(167,139,250,0.7)' }}>
+              ML engine warming up…
+            </p>
+          </div>
         ) : error ? (
           <div className="flex flex-col items-center gap-2 py-4">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="1.5">

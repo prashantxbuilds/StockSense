@@ -359,6 +359,13 @@ export default function Home() {
   const [loadingStock, setLoadingStock] = useState(false)
   const [chartType, setChartType] = useState('candles')
   const [fetchError, setFetchError] = useState(null)
+
+  // ML warm-up state
+  const [mlWarmingUp, setMlWarmingUp] = useState(false)
+  const [mlWarmCountdown, setMlWarmCountdown] = useState(0)
+  const mlRetryRef = useRef(null)
+  const mlCountdownRef = useRef(null)
+  const fetchPredictionRef = useRef(null) // stable ref to avoid stale closure
   
   const [watchlist, setWatchlist] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -465,9 +472,45 @@ export default function Home() {
     }
   }, [fetchJSON])
 
+  // ── Warm-up: fire-and-forget ping to wake Render ML service ──
+  const pingMlService = useCallback(() => {
+    fetch('/api/ml-warmup').catch(() => {})
+  }, [])
+
+  // ── Start warm-up countdown + auto-retry after delay ──
+  const startWarmUpAndRetry = useCallback((sym, model, numDays, candleData, delaySec = 35) => {
+    setMlWarmingUp(true)
+    setMlWarmCountdown(delaySec)
+
+    // Tick countdown every second
+    let remaining = delaySec
+    mlCountdownRef.current = setInterval(() => {
+      remaining -= 1
+      setMlWarmCountdown(remaining)
+      if (remaining <= 0) {
+        clearInterval(mlCountdownRef.current)
+      }
+    }, 1000)
+
+    // Auto-retry after delay
+    mlRetryRef.current = setTimeout(() => {
+      clearInterval(mlCountdownRef.current)
+      setMlWarmingUp(false)
+      setMlWarmCountdown(0)
+      // Re-run prediction — this time ML should be warm
+      // Use ref to avoid stale closure
+      fetchPredictionRef.current?.(sym, model, numDays, candleData)
+    }, delaySec * 1000)
+  }, []) // fetchPrediction called via stable ref
+
   // ── Fetch prediction ──
   const fetchPrediction = useCallback(async (sym, model, numDays, candleData) => {
     if (!candleData?.c || candleData.c.length < 5) return
+    // Cancel any pending warm-up retry if user manually retries
+    clearTimeout(mlRetryRef.current)
+    clearInterval(mlCountdownRef.current)
+    setMlWarmingUp(false)
+    setMlWarmCountdown(0)
     setPredicting(true)
     setPredictError(null)
     try {
@@ -485,8 +528,14 @@ export default function Home() {
         body: JSON.stringify({ symbol: sym, days: numDays, model, prices, dates }),
       })
       const data = await res.json()
-      if (!data.error) setPrediction(data)
-      else {
+      if (!data.error) {
+        setPrediction(data)
+      } else if (data.coldStart) {
+        // ML service cold-starting — show banner and schedule auto-retry
+        setPredictError(null)  // don't show red error, show warm-up banner instead
+        pingMlService()        // fire warmup ping again to keep Render alive
+        startWarmUpAndRetry(sym, model, numDays, candleData, 35)
+      } else {
         setPredictError(data.error)
         console.warn('Prediction error:', data.error)
       }
@@ -496,7 +545,13 @@ export default function Home() {
     } finally {
       setPredicting(false)
     }
-  }, [])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pingMlService, startWarmUpAndRetry])
+
+  // Keep fetchPredictionRef in sync so startWarmUpAndRetry's timeout always calls the latest version
+  useEffect(() => {
+    fetchPredictionRef.current = fetchPrediction
+  }, [fetchPrediction])
 
   // ── Fetch current quote only (for background live updates) ──
   const fetchCurrentQuote = useCallback(async (sym) => {
@@ -565,8 +620,17 @@ export default function Home() {
     })
   }, [])
 
-  // ── On mount: load persisted stock + watchlist ──
+  // ── Cleanup warm-up timers on unmount ──
   useEffect(() => {
+    return () => {
+      clearTimeout(mlRetryRef.current)
+      clearInterval(mlCountdownRef.current)
+    }
+  }, [])
+
+  // ── On mount: ping ML service to pre-warm it, then load stock + watchlist ──
+  useEffect(() => {
+    pingMlService() // fire-and-forget warm-up so Render starts before user clicks predict
     let initialSymbol = DEFAULT_SYMBOL
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('selected_symbol')
@@ -580,7 +644,7 @@ export default function Home() {
     loadWatchlistDetails()
     const interval = setInterval(loadWatchlistQuotes, 30000)
     return () => clearInterval(interval)
-  }, [fetchStockData, loadWatchlistQuotes, loadWatchlistDetails])
+  }, [fetchStockData, loadWatchlistQuotes, loadWatchlistDetails, pingMlService])
 
   // ── When candles arrive, run prediction (debounced) ──
   useEffect(() => {
@@ -731,6 +795,9 @@ export default function Home() {
               days={days}
               symbol={symbol}
               error={predictError}
+              warmingUp={mlWarmingUp}
+              warmCountdown={mlWarmCountdown}
+              onRetry={() => fetchPrediction(symbol, activeModel, days, candles)}
             />
 
             {/* Stock stats */}
@@ -747,6 +814,7 @@ export default function Home() {
                 symbol={symbol}
                 quote={quote}
                 error={predictError}
+                warmingUp={mlWarmingUp}
               />
               <NewsFeed symbol={symbol} />
             </div>
@@ -771,6 +839,7 @@ export default function Home() {
               symbol={symbol}
               quote={quote}
               error={predictError}
+              warmingUp={mlWarmingUp}
             />
             <NewsFeed symbol={symbol} />
           </div>

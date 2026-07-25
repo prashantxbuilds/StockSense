@@ -4,10 +4,89 @@ import { formatCurrency, getCurrencyForSymbol } from '@/lib/utils'
 const MODEL_COLOR = { prophet: '#7c6fee', lstm: '#4ade80', arima: '#fb923c' }
 const MODEL_LABEL = { prophet: 'Trend', lstm: 'Momentum', arima: 'Statistical' }
 
-export default function PredictionBand({ prediction, activeModel, days, symbol, error }) {
+export default function PredictionBand({ prediction, activeModel, days, symbol, error, warmingUp, warmCountdown, onRetry }) {
   const color = MODEL_COLOR[activeModel] || '#7c6fee'
   const label = MODEL_LABEL[activeModel] || 'Trend'
   const currencyCode = getCurrencyForSymbol(symbol)
+
+  // ── ML Warm-up banner (Render cold-start) ──
+  if (warmingUp) {
+    const progress = Math.max(0, Math.min(100, ((35 - warmCountdown) / 35) * 100))
+    return (
+      <div
+        className="px-5 py-4 rounded-xl overflow-hidden relative"
+        style={{ background: 'rgba(124,111,238,0.06)', border: '1px solid rgba(124,111,238,0.25)' }}
+      >
+        {/* Animated shimmer sweep */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: 'linear-gradient(90deg, transparent 0%, rgba(124,111,238,0.08) 50%, transparent 100%)',
+            backgroundSize: '200% 100%',
+            animation: 'shimmer 2s infinite',
+          }}
+        />
+        <div className="relative flex items-center gap-4">
+          {/* Pulsing rocket icon */}
+          <div
+            className="w-10 h-10 rounded-xl shrink-0 flex items-center justify-center"
+            style={{ background: 'rgba(124,111,238,0.15)', border: '1px solid rgba(124,111,238,0.3)', animation: 'pulse 1.5s ease-in-out infinite' }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/>
+              <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/>
+              <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/>
+              <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/>
+            </svg>
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between mb-1.5">
+              <p className="text-sm font-semibold" style={{ color: '#a78bfa' }}>
+                🔥 ML Engine Warming Up…
+              </p>
+              <span className="text-xs font-mono font-bold" style={{ color: '#7c6fee' }}>
+                {warmCountdown > 0 ? `${warmCountdown}s` : 'Retrying…'}
+              </span>
+            </div>
+            <p className="text-xs mb-2.5" style={{ color: 'rgba(255,255,255,0.4)' }}>
+              Prediction server is starting (Render cold-start). Auto-retrying when ready.
+            </p>
+
+            {/* Progress bar */}
+            <div className="h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
+              <div
+                className="h-full rounded-full transition-all duration-1000"
+                style={{
+                  width: `${progress}%`,
+                  background: 'linear-gradient(90deg, #7c6fee, #a78bfa)',
+                  boxShadow: '0 0 8px rgba(124,111,238,0.6)',
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Manual retry button */}
+          {onRetry && (
+            <button
+              onClick={onRetry}
+              className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+              style={{ background: 'rgba(124,111,238,0.15)', color: '#a78bfa', border: '1px solid rgba(124,111,238,0.3)' }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(124,111,238,0.28)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'rgba(124,111,238,0.15)'}
+              title="Retry now"
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+                <path d="M21 3v5h-5"/>
+              </svg>
+              Retry now
+            </button>
+          )}
+        </div>
+      </div>
+    )
+  }
 
   if (error) {
     return (
